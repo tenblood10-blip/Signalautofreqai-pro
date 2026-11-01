@@ -13,6 +13,8 @@ import type { SwitchRecommendation } from '../App';
 import { Card, StatBar, Badge, Select, DualPrice } from '../components/ui';
 import FeatureWeights from '../components/FeatureWeights';
 import ScannerTable from '../components/ScannerTable';
+import SpiderHunter from '../components/SpiderHunter';
+import { useSpiderHunter } from '../hooks/useSpiderHunter';
 
 interface DashboardProps {
   signal: SignalResult | null;
@@ -49,6 +51,12 @@ export default function Dashboard({
   marketFilter, onMarketFilter, switchRec, onDismissSwitchRec,
   rate, showIDR,
 }: DashboardProps) {
+  const spiderScores = useMemo(
+    () => scanRows.map((r) => ({ coin: r.label, score: r.score })),
+    [scanRows]
+  );
+  const { best, triggerShoot } = useSpiderHunter(spiderScores);
+
   const chartData = useMemo(
     () => candles.slice(-60).map((c) => ({
       time: new Date(c.time * 1000).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
@@ -162,6 +170,8 @@ export default function Dashboard({
         rate={rate}
         showIDR={showIDR}
       />
+
+      <SpiderHunter best={best} triggerShoot={triggerShoot} tpPercent={tpPercent} slPercent={slPercent} />
 
       {mode === 'real' && (
         <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
