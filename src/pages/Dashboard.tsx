@@ -14,7 +14,9 @@ import { Card, StatBar, Badge, Select, DualPrice } from '../components/ui';
 import FeatureWeights from '../components/FeatureWeights';
 import ScannerTable from '../components/ScannerTable';
 import SpiderHunter from '../components/SpiderHunter';
+import PerfectSpiderWeb from '../components/PerfectSpiderWeb';
 import { useSpiderHunter } from '../hooks/useSpiderHunter';
+import { computeAiVotes, deriveSpiderState } from '../lib/aiVotes';
 
 interface DashboardProps {
   signal: SignalResult | null;
@@ -81,6 +83,16 @@ export default function Dashboard({
   const effScoreThreshold = isAggressive ? 62 : scoreThreshold;
   const effConfThreshold = isAggressive ? 55 : confThreshold;
   const entryActive = side !== 'WAIT' && (signal?.score ?? 0) >= effScoreThreshold && (signal?.confidence ?? 0) >= effConfThreshold;
+
+  const aiVotes = useMemo(
+    () => computeAiVotes(signal, candles, effScoreThreshold, effConfThreshold),
+    [signal, candles, effScoreThreshold, effConfThreshold]
+  );
+  const spiderState = deriveSpiderState(aiVotes, side);
+  const spiderCoins = useMemo(
+    () => (best?.allCoins.length ? best.allCoins : scanRows.slice(0, 10).map((r) => r.label)),
+    [best, scanRows]
+  );
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -172,6 +184,8 @@ export default function Dashboard({
       />
 
       <SpiderHunter best={best} triggerShoot={triggerShoot} tpPercent={tpPercent} slPercent={slPercent} />
+
+      <PerfectSpiderWeb votes={aiVotes} coins={spiderCoins} state={spiderState} />
 
       {mode === 'real' && (
         <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
