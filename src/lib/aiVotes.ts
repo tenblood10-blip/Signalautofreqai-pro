@@ -13,6 +13,7 @@ export function computeAiVotes(
   candles: Candle[],
   scoreThreshold: number,
   confThreshold: number,
+  mtfOk: boolean | null,
 ): AiVote[] {
   const labels = [
     { id: 'ai1', label: 'EMA 20/50' },
@@ -31,7 +32,7 @@ export function computeAiVotes(
     ind.rsi >= 50 && ind.rsi <= 70,
     ind.price > ind.bbMiddle,
     last ? last.volume > ind.volAvg20 * 1.8 : false,
-    null,
+    mtfOk,
     signal.score >= scoreThreshold && signal.confidence >= confThreshold,
   ];
   return labels.map((l, i) => ({ ...l, ok: oks[i] }));

@@ -43,6 +43,7 @@ export default function SpiderHunter({ best, triggerShoot, tpPercent, slPercent 
   const [shot, setShot] = useState<Shot | null>(null);
   const [angleOffset, setAngleOffset] = useState(0);
   const [soundOn, setSoundOn] = useState(true);
+  const [imgFailed, setImgFailed] = useState(false);
   const soundOnRef = useRef(soundOn);
   const lastShotRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -100,7 +101,8 @@ export default function SpiderHunter({ best, triggerShoot, tpPercent, slPercent 
         </div>
       </div>
 
-      <svg viewBox="0 0 300 150" className="w-full h-auto mt-2 relative z-10">
+      <div className="relative w-full aspect-[2/1] mt-2 z-10">
+      <svg viewBox="0 0 300 150" className="absolute inset-0 w-full h-full">
         <g opacity="0.25" stroke="#FCD535" strokeWidth="0.6">
           {Array.from({ length: 10 }).map((_, i) => {
             const a = (i * 36 * Math.PI) / 180;
@@ -132,23 +134,6 @@ export default function SpiderHunter({ best, triggerShoot, tpPercent, slPercent 
           );
         })}
 
-        <g transform="translate(150,75)">
-          <g className={shot ? 'animate-[wiggle_0.1s_ease-in-out_infinite]' : 'animate-[wiggle_0.25s_ease-in-out_infinite]'}>
-            <line x1="-14" y1="-9" x2="-24" y2="-18" stroke="#FCD535" strokeWidth="2.2" strokeLinecap="round" />
-            <line x1="14" y1="-9" x2="24" y2="-18" stroke="#FCD535" strokeWidth="2.2" strokeLinecap="round" />
-            <line x1="-14" y1="9" x2="-24" y2="18" stroke="#FCD535" strokeWidth="2.2" strokeLinecap="round" />
-            <line x1="14" y1="9" x2="24" y2="18" stroke="#FCD535" strokeWidth="2.2" strokeLinecap="round" />
-            <line x1="-8" y1="-12" x2="-12" y2="-22" stroke="#FCD535" strokeWidth="1.5" opacity="0.7" />
-            <line x1="8" y1="-12" x2="12" y2="-22" stroke="#FCD535" strokeWidth="1.5" opacity="0.7" />
-          </g>
-          <circle cx="0" cy="0" r="13" fill="#0B0E11" stroke="#FCD535" strokeWidth="2.5" />
-          <circle cx="-3.5" cy="-2.5" r="2.2" fill="#fff" />
-          <circle cx="3.5" cy="-2.5" r="2.2" fill="#fff" />
-          <circle cx="-3.5" cy="-2.5" r="1" fill="#000" />
-          <circle cx="3.5" cy="-2.5" r="1" fill="#000" />
-          {shot && <circle cx="0" cy="0" r="18" fill="none" stroke="#02C076" strokeWidth="2" className="animate-ping" />}
-        </g>
-
         {shot && (
           <>
             <path d={shot.webPath} stroke="#fff" strokeWidth="2.5" fill="none" strokeDasharray="6 4" opacity="0.9">
@@ -168,6 +153,22 @@ export default function SpiderHunter({ best, triggerShoot, tpPercent, slPercent 
           </>
         )}
       </svg>
+
+        <div
+          className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[140px] h-[140px] max-w-[45%] max-h-[90%] transition-transform duration-300 ${shot ? 'scale-[1.2]' : 'scale-100'}`}
+        >
+          {imgFailed ? (
+            <Bug className="w-full h-full text-[#FCD535] drop-shadow-[0_0_20px_rgba(252,213,53,0.8)]" />
+          ) : (
+            <img
+              src="/spider-15t.png"
+              alt="15T Spider"
+              onError={() => setImgFailed(true)}
+              className={`w-full h-full object-contain animate-[float_2s_ease-in-out_infinite] transition-[filter] duration-300 ${shot ? 'drop-shadow-[0_0_24px_rgba(2,192,118,0.95)]' : 'drop-shadow-[0_0_20px_rgba(252,213,53,0.8)]'}`}
+            />
+          )}
+        </div>
+      </div>
 
       <div className="flex gap-2 mt-1 relative z-10">
         <div className="flex-1 min-w-0 bg-[#151A21] border border-[#1E2329] rounded-xl p-2.5 flex justify-between items-center gap-2">
@@ -192,9 +193,6 @@ export default function SpiderHunter({ best, triggerShoot, tpPercent, slPercent 
 
       <p className="mt-2 text-[9px] text-gray-600 relative z-10">Sinyal ditampilkan dari skor AI. Bukan jaminan profit.</p>
 
-      <style>{`
-        @keyframes wiggle { 0%,100%{transform:rotate(-4deg)} 50%{transform:rotate(4deg)} }
-      `}</style>
     </div>
   );
 }

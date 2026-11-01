@@ -135,6 +135,13 @@ export default function Layout({ current, onNavigate, mode, children }: LayoutPr
 
       {/* Main content */}
       <main className="md:pl-64 min-h-screen">
+        <div className="bg-[#0d1117] border-b border-gray-800/60">
+          <div className="px-4 md:px-8 py-2 max-w-6xl mx-auto flex items-center justify-center">
+            <p className="text-[10px] md:text-xs font-mono font-bold tracking-wider text-[#02C076]">
+              SCALPING MODE: 1m • 3m • 5m • 15m | NO 1h/4h | LOCKED
+            </p>
+          </div>
+        </div>
         <div className="px-4 md:px-8 py-4 md:py-8 max-w-6xl mx-auto">{children}</div>
       </main>
     </div>

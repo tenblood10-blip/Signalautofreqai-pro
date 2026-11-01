@@ -17,6 +17,7 @@ import SpiderHunter from '../components/SpiderHunter';
 import PerfectSpiderWeb from '../components/PerfectSpiderWeb';
 import { useSpiderHunter } from '../hooks/useSpiderHunter';
 import { computeAiVotes, deriveSpiderState } from '../lib/aiVotes';
+import { SCALPING_TIMEFRAMES } from '../lib/timeframes';
 
 interface DashboardProps {
   signal: SignalResult | null;
@@ -42,16 +43,15 @@ interface DashboardProps {
   onDismissSwitchRec: () => void;
   rate: number;
   showIDR: boolean;
+  mtfOk: boolean | null;
 }
-
-const timeframes: Timeframe[] = ['5m', '15m', '1h', '4h'];
 
 export default function Dashboard({
   signal, candles, timeframe, onTimeframe, loading, error, mode,
   slPercent, tpPercent, scoreThreshold, confThreshold, openCount,
   selectedSymbol, scanRows, scanning, onScan, onSelectAsset,
   marketFilter, onMarketFilter, switchRec, onDismissSwitchRec,
-  rate, showIDR,
+  rate, showIDR, mtfOk,
 }: DashboardProps) {
   const spiderScores = useMemo(
     () => scanRows.map((r) => ({ coin: r.label, score: r.score })),
@@ -85,8 +85,8 @@ export default function Dashboard({
   const entryActive = side !== 'WAIT' && (signal?.score ?? 0) >= effScoreThreshold && (signal?.confidence ?? 0) >= effConfThreshold;
 
   const aiVotes = useMemo(
-    () => computeAiVotes(signal, candles, effScoreThreshold, effConfThreshold),
-    [signal, candles, effScoreThreshold, effConfThreshold]
+    () => computeAiVotes(signal, candles, effScoreThreshold, effConfThreshold, mtfOk),
+    [signal, candles, effScoreThreshold, effConfThreshold, mtfOk]
   );
   const spiderState = deriveSpiderState(aiVotes, side);
   const spiderCoins = useMemo(
@@ -103,25 +103,24 @@ export default function Dashboard({
             <h2 className="text-xl md:text-2xl font-bold text-white">Dashboard Live</h2>
             <p className="text-sm text-gray-500">{selectedSymbol} · Regression AI 15-Fitur</p>
           </div>
-          {isAggressive && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-orange-500/40 bg-orange-500/15 text-orange-400 text-xs font-bold animate-pulse">
-              <Zap className="h-3.5 w-3.5" />
-              Mode Aggressive
-            </span>
-          )}
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-[#02C076]/40 bg-[#02C076]/15 text-[#02C076] text-xs font-bold">
+            <Zap className="h-3.5 w-3.5" />
+            Mode Scalping 1m-15m LOCKED
+          </span>
         </div>
         <div className="flex items-center gap-2">
-          {timeframes.map((tf) => (
+          {SCALPING_TIMEFRAMES.map((tf) => (
             <button
-              key={tf}
-              onClick={() => onTimeframe(tf)}
+              key={tf.id}
+              title={tf.desc}
+              onClick={() => onTimeframe(tf.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                timeframe === tf
+                timeframe === tf.id
                   ? 'bg-blue-500 text-white'
                   : 'bg-[#161b22] text-gray-400 border border-gray-800 hover:text-gray-200'
               }`}
             >
-              {tf}
+              {tf.label}
             </button>
           ))}
         </div>
@@ -249,7 +248,7 @@ export default function Dashboard({
             <Badge color="amber">Menunggu Sinyal</Badge>
           )}
           <p className="mt-2 text-xs text-gray-500">
-            Threshold: Skor {effScoreThreshold} · Conf {effConfThreshold}%{isAggressive ? ' (Aggressive)' : ''}
+            Threshold: Skor {effScoreThreshold} · Conf {effConfThreshold}%
           </p>
         </Card>
 

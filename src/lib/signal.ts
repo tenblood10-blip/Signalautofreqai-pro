@@ -87,7 +87,7 @@ export function generateSignal(candles: Candle[], symbol = 'BTCUSDT'): SignalRes
     }
   }
 
-  const modeLabel = thresholds.aggressive ? ' | Mode Aggressive' : '';
+  const modeLabel = thresholds.aggressive ? ' | Mode Scalping 1m-15m LOCKED' : '';
   reasons.push(
     `Confidence ${confidence}% (R2=${model.r2Smoothed.toFixed(2)}${model.r2Smoothed < 0.05 ? ' learning' : ''}${modeLabel})`
   );

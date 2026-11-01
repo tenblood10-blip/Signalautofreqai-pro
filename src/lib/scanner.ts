@@ -25,16 +25,16 @@ export const STOCK_ASSETS: AssetDef[] = [
 
 export const ALL_ASSETS: AssetDef[] = [...CRYPTO_ASSETS, ...STOCK_ASSETS];
 
-const TF_INTERVAL_MAP: Record<Timeframe, string> = {
-  '5m': '5m',
-  '15m': '15m',
-  '1h': '60m',
-  '4h': '1h',
+// Yahoo has no 3m bars, so stocks use 2m for the 3m timeframe.
+const STOCK_YAHOO: Record<Timeframe, { interval: string; range: string }> = {
+  '1m': { interval: '1m', range: '5d' },
+  '3m': { interval: '2m', range: '5d' },
+  '5m': { interval: '5m', range: '1mo' },
+  '15m': { interval: '15m', range: '1mo' },
 };
 
 async function fetchStockCandles(symbol: string, timeframe: Timeframe, limit = 300): Promise<Candle[]> {
-  const interval = TF_INTERVAL_MAP[timeframe] ?? '15m';
-  const range = interval === '1h' ? '1mo' : interval === '60m' ? '1mo' : '1mo';
+  const { interval, range } = STOCK_YAHOO[timeframe];
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=${interval}&range=${range}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Yahoo API error ${res.status} for ${symbol}`);
@@ -58,7 +58,7 @@ async function fetchStockCandles(symbol: string, timeframe: Timeframe, limit = 3
   return candles.slice(-limit);
 }
 
-async function fetchAssetCandles(asset: AssetDef, timeframe: Timeframe): Promise<Candle[]> {
+export async function fetchAssetCandles(asset: AssetDef, timeframe: Timeframe): Promise<Candle[]> {
   if (asset.klass === 'crypto') {
     return fetchCandles(asset.symbol, timeframe, 250);
   }

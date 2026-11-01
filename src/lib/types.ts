@@ -1,4 +1,4 @@
-export type Timeframe = '5m' | '15m' | '1h' | '4h';
+export type Timeframe = '1m' | '3m' | '5m' | '15m';
 
 export type TradeMode = 'simulasi' | 'semi' | 'real';
 

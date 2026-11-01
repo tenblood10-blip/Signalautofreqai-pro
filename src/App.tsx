@@ -8,13 +8,14 @@ import type {
   PageId, Settings, SignalResult, TradeRecord, EquityPoint, Candle, Timeframe,
   ScanRow, AssetClass, AssetDef,
 } from './lib/types';
-import { fetchCandles } from './lib/binance';
 import { generateSignal } from './lib/signal';
 import { sendWA, buildSignalMessage } from './lib/fonnte';
 import {
   ALL_ASSETS, CRYPTO_ASSETS, STOCK_ASSETS, scanAssets, findBestSignal,
-  buildOpportunityMessage,
+  buildOpportunityMessage, fetchAssetCandles,
 } from './lib/scanner';
+import { mtfLocked } from './lib/mtf';
+import { DEFAULT_TIMEFRAME } from './lib/timeframes';
 import {
   loadSettings, saveSettings, loadTrades, saveTrades, loadEquity, saveEquity,
 } from './lib/storage';
@@ -31,11 +32,12 @@ export interface SwitchRecommendation {
 
 const POLL_MS = 30000;
 const SCAN_MS = 60000;
+const MTF_MS = 60000;
 
 export default function App() {
   const [page, setPage] = useState<PageId>('dashboard');
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
-  const [timeframe, setTimeframe] = useState<Timeframe>('15m');
+  const [timeframe, setTimeframe] = useState<Timeframe>(DEFAULT_TIMEFRAME);
   const [selectedSymbol, setSelectedSymbol] = useState('BTCUSDT');
   const [candles, setCandles] = useState<Candle[]>([]);
   const [signal, setSignal] = useState<SignalResult | null>(null);
@@ -48,6 +50,7 @@ export default function App() {
   const [scanning, setScanning] = useState(false);
   const [marketFilter, setMarketFilter] = useState<AssetClass | 'all'>('all');
   const [switchRec, setSwitchRec] = useState<SwitchRecommendation | null>(null);
+  const [mtfOk, setMtfOk] = useState<boolean | null>(null);
 
   const { rate } = useExchangeRate();
 
@@ -60,33 +63,26 @@ export default function App() {
 
   const selectedAsset: AssetDef = ALL_ASSETS.find((a) => a.symbol === selectedSymbol) ?? ALL_ASSETS[0];
 
-  const fetchAssetCandles = useCallback(async (asset: AssetDef, tf: Timeframe): Promise<Candle[]> => {
-    if (asset.klass === 'crypto') {
-      return fetchCandles(asset.symbol, tf, 250);
-    }
-    const interval = tf === '5m' ? '5m' : tf === '15m' ? '15m' : tf === '1h' ? '60m' : '1h';
-    const range = '1mo';
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${asset.symbol}?interval=${interval}&range=${range}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Yahoo API error ${res.status}`);
-    const data = await res.json();
-    const result = data?.chart?.result?.[0];
-    if (!result) throw new Error('No Yahoo data');
-    const quote = result.indicators?.quote?.[0];
-    const timestamps: number[] = result.timestamp ?? [];
-    const out: Candle[] = [];
-    for (let i = 0; i < timestamps.length; i++) {
-      const o = quote.open?.[i];
-      const h = quote.high?.[i];
-      const l = quote.low?.[i];
-      const c = quote.close?.[i];
-      const v = quote.volume?.[i];
-      if (o == null || h == null || l == null || c == null || v == null) continue;
-      out.push({ time: timestamps[i], open: o, high: h, low: l, close: c, volume: v });
-    }
-    if (out.length < 50) throw new Error('Insufficient stock data');
-    return out.slice(-250);
-  }, []);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const [c5, c15] = await Promise.all([
+          fetchAssetCandles(selectedAsset, '5m'),
+          fetchAssetCandles(selectedAsset, '15m'),
+        ]);
+        if (!cancelled) setMtfOk(mtfLocked(c5, c15));
+      } catch {
+        if (!cancelled) setMtfOk(null);
+      }
+    };
+    load();
+    const id = setInterval(load, MTF_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [selectedAsset]);
 
   // Poll selected asset
   const poll = useCallback(async () => {
@@ -149,7 +145,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [selectedAsset, timeframe, settings, trades, fetchAssetCandles]);
+  }, [selectedAsset, timeframe, settings, trades]);
 
   useEffect(() => {
     poll();
@@ -300,6 +296,7 @@ export default function App() {
           onDismissSwitchRec={() => setSwitchRec(null)}
           rate={rate}
           showIDR={settings.showIDR}
+          mtfOk={mtfOk}
         />
       )}
       {page === 'history' && <HistoryPage trades={trades} onClear={handleClearTrades} rate={rate} showIDR={settings.showIDR} />}
