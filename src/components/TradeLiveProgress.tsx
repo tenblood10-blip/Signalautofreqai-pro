@@ -23,12 +23,12 @@ export default function TradeLiveProgress({ trade, livePrice }: TradeLiveProgres
         <span className={`font-bold ${pnlColor}`}>
           PnL {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}%
         </span>
-        <span className="text-gray-400">Menuju TP: {progress.toFixed(0)}%</span>
+        <span className="text-gray-400">Ke TP {progress.toFixed(0)}%</span>
       </div>
       <div className="h-1.5 rounded-full bg-[#1E2329] overflow-hidden">
         <div className="h-full bg-[#02C076] transition-all duration-500" style={{ width: `${progress}%` }} />
       </div>
-      <p className="text-[11px] text-gray-500 tabular-nums">Butuh ${formatUsd(remaining)} lagi</p>
+      <p className="text-[11px] text-gray-500 tabular-nums">Sisa ${formatUsd(remaining)} lagi</p>
     </div>
   );
 }
