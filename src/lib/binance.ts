@@ -20,16 +20,3 @@ export async function fetchKlines(symbol: string, interval: Timeframe): Promise<
     volume: +(c[5] as string),
   }));
 }
-
-export async function fetchMultiple(symbols: string[], interval: Timeframe): Promise<Candle[][]> {
-  const results = await Promise.all(symbols.map((s) => fetchKlines(s, interval)));
-  return results;
-}
-
-export async function fetchCandles(
-  symbol: string,
-  timeframe: Timeframe,
-  _limit = 250
-): Promise<Candle[]> {
-  return fetchKlines(symbol, timeframe);
-}

@@ -1,13 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { TrendingUp, TrendingDown, Minus, Lock, Activity, WifiOff } from 'lucide-react';
 import type { Timeframe } from '@/lib/types';
 import { SCALPING_TIMEFRAMES } from '@/lib/timeframes';
-import { getSignal, type ScalpChecks, type ScalpSignal } from '@/lib/scalpingEngine';
-import { useScalpingData, SCALP_SYMBOL } from '@/hooks/useScalpingData';
+import { formatUsd, passedChecks, type ScalpChecks, type ScalpResult, type ScalpSignal } from '@/lib/scalpingEngine';
+import { SCALP_SYMBOL } from '@/hooks/useScalpingData';
 
 interface DashboardProps {
   timeframe: Timeframe;
   onTimeframe: (t: Timeframe) => void;
+  result: ScalpResult;
+  failed: boolean;
+  updatedAt: number | null;
 }
 
 const SIGNAL_STYLE: Record<ScalpSignal, { label: string; text: string; icon: typeof TrendingUp }> = {
@@ -15,8 +18,6 @@ const SIGNAL_STYLE: Record<ScalpSignal, { label: string; text: string; icon: typ
   SIAP: { label: 'SIAP', text: 'text-[#FCD535]', icon: Activity },
   TUNGGU: { label: 'TUNGGU', text: 'text-gray-400', icon: Minus },
 };
-
-const fmt = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function MetricCard({ label, value, detail, ok }: { label: string; value: string; detail: string; ok: boolean | null }) {
   const status = ok === null ? 'N/A' : ok ? 'OK' : 'NO';
@@ -33,18 +34,7 @@ function MetricCard({ label, value, detail, ok }: { label: string; value: string
   );
 }
 
-function countPassed(checks: ScalpChecks | null): number {
-  if (!checks) return 0;
-  return Object.values(checks).filter(Boolean).length;
-}
-
-export default function Dashboard({ timeframe, onTimeframe }: DashboardProps) {
-  const { data, failed } = useScalpingData(timeframe);
-  const result = useMemo(
-    () => getSignal(data?.base ?? null, data?.k5 ?? null, data?.k15 ?? null),
-    [data],
-  );
-
+export default function Dashboard({ timeframe, onTimeframe, result, failed, updatedAt }: DashboardProps) {
   const price = result.price;
   const [dir, setDir] = useState<'up' | 'down' | 'flat'>('flat');
   const prevPrice = useRef<number | null>(null);
@@ -59,9 +49,9 @@ export default function Dashboard({ timeframe, onTimeframe }: DashboardProps) {
   const priceColor = dir === 'up' ? 'text-[#02C076]' : dir === 'down' ? 'text-[#F84960]' : 'text-white';
   const style = SIGNAL_STYLE[result.signal];
   const SignalIcon = style.icon;
-  const passed = countPassed(result.checks);
+  const passed = passedChecks(result.checks);
   const locked = result.score >= 80;
-  const updatedAt = data ? new Date(data.updatedAt).toLocaleTimeString('id-ID') : null;
+  const updatedLabel = updatedAt ? new Date(updatedAt).toLocaleTimeString('id-ID') : null;
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -98,11 +88,11 @@ export default function Dashboard({ timeframe, onTimeframe }: DashboardProps) {
           )}
         </div>
         <p className={`mt-2 text-3xl md:text-4xl font-black tabular-nums transition-colors duration-300 ${price === null ? 'text-gray-500' : priceColor}`}>
-          {price === null ? 'Memuat data...' : `$${fmt(price)}`}
+          {price === null ? 'Memuat data...' : `$${formatUsd(price)}`}
         </p>
-        {updatedAt && (
+        {updatedLabel && (
           <p className="mt-1 text-[11px] text-gray-500">
-            Diperbarui {updatedAt}
+            Diperbarui {updatedLabel}
             {failed ? ' (data terakhir)' : ''}
           </p>
         )}
@@ -111,7 +101,7 @@ export default function Dashboard({ timeframe, onTimeframe }: DashboardProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
         <MetricCard
           label="EMA 9 / 21"
-          value={result.ema9 !== null && result.ema21 !== null ? `${fmt(result.ema9)} / ${fmt(result.ema21)}` : 'Memuat...'}
+          value={result.ema9 !== null && result.ema21 !== null ? `${formatUsd(result.ema9)} / ${formatUsd(result.ema21)}` : 'Memuat...'}
           detail="EMA 9 di atas EMA 21"
           ok={result.checks?.ema ?? null}
         />
@@ -165,11 +155,11 @@ export default function Dashboard({ timeframe, onTimeframe }: DashboardProps) {
           <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="bg-[#151A21] border border-[#02C076]/40 rounded-xl p-3">
               <p className="text-[10px] text-gray-500 tracking-widest">TAKE PROFIT +0.45%</p>
-              <p className="text-base font-bold text-[#02C076] tabular-nums">${fmt(result.tp)}</p>
+              <p className="text-base font-bold text-[#02C076] tabular-nums">${formatUsd(result.tp)}</p>
             </div>
             <div className="bg-[#151A21] border border-[#F84960]/40 rounded-xl p-3">
               <p className="text-[10px] text-gray-500 tracking-widest">STOP LOSS -0.35%</p>
-              <p className="text-base font-bold text-[#F84960] tabular-nums">${fmt(result.sl)}</p>
+              <p className="text-base font-bold text-[#F84960] tabular-nums">${formatUsd(result.sl)}</p>
             </div>
             <div className="bg-[#02C076]/10 border border-[#02C076]/40 rounded-xl p-3 flex items-center justify-center gap-2">
               <Lock className="h-4 w-4 text-[#02C076]" />

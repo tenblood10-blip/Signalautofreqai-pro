@@ -6,28 +6,6 @@ export type PageId = 'dashboard' | 'history' | 'analytics' | 'settings';
 
 export type SignalSide = 'BUY' | 'SELL' | 'WAIT';
 
-export type AssetClass = 'crypto' | 'stock';
-
-export interface AssetDef {
-  symbol: string;
-  label: string;
-  klass: AssetClass;
-}
-
-export interface ScanRow {
-  symbol: string;
-  label: string;
-  klass: AssetClass;
-  price: number;
-  score: number;
-  confidence: number;
-  side: SignalSide;
-  r2: number;
-  return1h: number;
-  signal: SignalResult | null;
-  aggressive: boolean;
-}
-
 export interface Candle {
   time: number;
   open: number;
@@ -35,41 +13,6 @@ export interface Candle {
   low: number;
   close: number;
   volume: number;
-}
-
-export interface Indicators {
-  rsi: number;
-  macd: number;
-  macdSignal: number;
-  macdHist: number;
-  bbUpper: number;
-  bbMiddle: number;
-  bbLower: number;
-  bbPercent: number;
-  ema20: number;
-  ema50: number;
-  ema200: number;
-  volAvg20: number;
-  price: number;
-}
-
-export interface FeatureWeight {
-  name: string;
-  weight: number;
-  value: number;
-}
-
-export interface SignalResult {
-  side: SignalSide;
-  score: number;
-  confidence: number;
-  reasons: string[];
-  indicators: Indicators;
-  lastUpdate: number;
-  r2: number;
-  featureWeights: FeatureWeight[];
-  symbol: string;
-  aggressive: boolean;
 }
 
 export interface Settings {

@@ -36,6 +36,19 @@ const EMPTY_RESULT: ScalpResult = {
   sl: null,
 };
 
+export function formatUsd(n: number): string {
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+export function passedChecks(checks: ScalpChecks | null): number {
+  if (!checks) return 0;
+  return Object.values(checks).filter(Boolean).length;
+}
+
+export function confidenceOf(checks: ScalpChecks | null): number {
+  return passedChecks(checks) * 20;
+}
+
 export function calcEMA(prices: number[], period: number): number {
   const k = 2 / (period + 1);
   let ema = prices[0];
