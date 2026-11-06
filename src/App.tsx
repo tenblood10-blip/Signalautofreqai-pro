@@ -15,9 +15,6 @@ import {
 } from './lib/storage';
 import { useExchangeRate } from './lib/exchange';
 
-const SANITY_PNL_LIMIT = 100;
-const SANITY_EQUITY_LIMIT = 1000;
-
 export default function App() {
   const [page, setPage] = useState<PageId>('dashboard');
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
@@ -76,6 +73,7 @@ export default function App() {
   }, [result, trades, settings, timeframe]);
 
   // Auto close the open trade when live price hits TP or SL
+  // FIX: Sanity check dihapus total, WIN tidak akan ke-reset lagi
   useEffect(() => {
     const open = trades.find((t) => t.side === 'BUY' && t.status === 'OPEN');
     if (!open || livePrice === null) return;
@@ -87,11 +85,7 @@ export default function App() {
       .filter((t) => t.status === 'WIN' || t.status === 'LOSS')
       .reduce((acc, t) => acc + (t.pnl ?? 0), 0);
     const newEquity = settings.initialCapital + sumPnL;
-    if (Math.abs(closed.pnl ?? 0) > SANITY_PNL_LIMIT || newEquity > SANITY_EQUITY_LIMIT) {
-      setTrades([]);
-      setEquity([{ time: Date.now(), equity: settings.initialCapital }]);
-      return;
-    }
+
     setTrades(updated);
     setEquity((eq) => [...eq, { time: closed.exitTime ?? Date.now(), equity: newEquity }]);
   }, [livePrice, trades, settings.initialCapital]);
@@ -125,4 +119,4 @@ export default function App() {
       {page === 'settings' && <SettingsPage settings={settings} onChange={setSettings} rate={rate} />}
     </Layout>
   );
-}
+  }
