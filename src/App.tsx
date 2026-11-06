@@ -14,6 +14,8 @@ import {
   loadSettings, saveSettings, loadTrades, saveTrades, loadEquity, saveEquity,
 } from './lib/storage';
 import { useExchangeRate } from './lib/exchange';
+import ReviewerCard from './components/ReviewerCard';
+import { reviewTrades } from './lib/tradeReviewer';
 
 export default function App() {
   const [page, setPage] = useState<PageId>('dashboard');
@@ -28,6 +30,7 @@ export default function App() {
     () => getSignal(data?.base ?? null, data?.k5 ?? null, data?.k15 ?? null),
     [data],
   );
+  const review = useMemo(() => reviewTrades(trades), [trades]);
   const livePrice = result.price;
   const prevSignalRef = useRef<ScalpSignal>('TUNGGU');
 
@@ -98,13 +101,16 @@ export default function App() {
   return (
     <Layout current={page} onNavigate={setPage} mode={settings.mode}>
       {page === 'dashboard' && (
-        <Dashboard
-          timeframe={timeframe}
-          onTimeframe={setTimeframe}
-          result={result}
-          failed={failed}
-          updatedAt={data?.updatedAt ?? null}
-        />
+        <>
+          <ReviewerCard review={review} />
+          <Dashboard
+            timeframe={timeframe}
+            onTimeframe={setTimeframe}
+            result={result}
+            failed={failed}
+            updatedAt={data?.updatedAt ?? null}
+          />
+        </>
       )}
       {page === 'history' && (
         <HistoryPage
@@ -119,4 +125,4 @@ export default function App() {
       {page === 'settings' && <SettingsPage settings={settings} onChange={setSettings} rate={rate} />}
     </Layout>
   );
-  }
+}
