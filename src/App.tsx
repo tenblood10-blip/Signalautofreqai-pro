@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import HistoryPage from './pages/HistoryPage';
 import SettingsPage from './pages/SettingsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import PasswordGate from './components/PasswordGate';
 import type { PageId, Settings, TradeRecord, EquityPoint, Timeframe } from './lib/types';
 import { sendWA, buildSignalMessage } from './lib/fonnte';
 import { DEFAULT_TIMEFRAME } from './lib/timeframes';
@@ -18,6 +19,7 @@ import ReviewerCard from './components/ReviewerCard';
 import { reviewTrades } from './lib/tradeReviewer';
 
 export default function App() {
+  const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem('bot-unlocked') === 'yes');
   const [page, setPage] = useState<PageId>('dashboard');
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
   const [timeframe, setTimeframe] = useState<Timeframe>(DEFAULT_TIMEFRAME);
@@ -38,7 +40,6 @@ export default function App() {
   useEffect(() => { saveTrades(trades); }, [trades]);
   useEffect(() => { saveEquity(equity); }, [equity]);
 
-  // Open a trade on each fresh BELI signal, one open trade at a time
   useEffect(() => {
     const previous = prevSignalRef.current;
     prevSignalRef.current = result.signal;
@@ -75,8 +76,6 @@ export default function App() {
     }
   }, [result, trades, settings, timeframe]);
 
-  // Auto close the open trade when live price hits TP or SL
-  // FIX: Sanity check dihapus total, WIN tidak akan ke-reset lagi
   useEffect(() => {
     const open = trades.find((t) => t.side === 'BUY' && t.status === 'OPEN');
     if (!open || livePrice === null) return;
@@ -97,6 +96,10 @@ export default function App() {
     setTrades([]);
     setEquity([{ time: Date.now(), equity: settings.initialCapital }]);
   };
+
+  if (!unlocked) {
+    return <PasswordGate onUnlock={() => setUnlocked(true)} />;
+  }
 
   return (
     <Layout current={page} onNavigate={setPage} mode={settings.mode}>
@@ -125,4 +128,4 @@ export default function App() {
       {page === 'settings' && <SettingsPage settings={settings} onChange={setSettings} rate={rate} />}
     </Layout>
   );
-}
+  }
