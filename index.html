@@ -1,16 +1,85 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FreqAI Pro Crypto Trading Platform</title>
-    <meta property="og:image" content="https://bolt.new/static/og_default.png" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://bolt.new/static/og_default.png" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FREQAI PRO - SATPAM</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+body{background:#0a0a0a;color:#fff;padding:16px;padding-bottom:40px}
+.top{text-align:center;margin-bottom:16px}
+.top h1{font-size:22px;letter-spacing:1px}
+.top p{color:#888;font-size:12px;margin-top:4px}
+.price-box{background:#111;border:1px solid #222;border-radius:16px;padding:20px;text-align:center;margin-bottom:16px}
+.price-box small{color:#888;font-size:12px}
+.price{font-size:42px;font-weight:900;margin:8px 0;color:#00ff88}
+.live{color:#00ff88;font-size:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.card{background:#111;border:1px solid #222;border-radius:16px;padding:16px}
+.card h3{font-size:13px;color:#888;margin-bottom:8px}
+.card .modal{font-size:22px;font-weight:900}
+.card .pnl{font-size:12px;margin-top:6px}
+.sinyal{text-align:center;padding:18px;border-radius:16px;font-size:28px;font-weight:900;margin-bottom:16px;background:#1a1a1a;border:2px solid #333}
+.sinyal.BELI{background:#003d1f;border-color:#00ff88;color:#00ff88}
+.sinyal.TUNGGU{color:#ffaa00}
+.log{background:#111;border:1px solid #222;border-radius:16px;padding:16px;margin-bottom:16px}
+.log h3{font-size:13px;color:#888;margin-bottom:8px}
+.log p{font-size:13px;line-height:1.5}
+.trades{background:#111;border:1px solid #222;border-radius:16px;padding:16px}
+.trades h3{font-size:13px;color:#888;margin-bottom:10px}
+.trade{border-bottom:1px solid #222;padding:10px 0;font-size:13px;line-height:1.5}
+.trade:last-child{border:none}
+.win{color:#00ff88}.loss{color:#ff4444}.open{color:#ffaa00}
+canvas{width:100%;height:140px;background:#000;border-radius:12px;margin-top:10px}
+button{width:100%;padding:14px;background:#00ff88;border:none;border-radius:12px;font-weight:900;font-size:15px;margin-top:16px;color:#000}
+</style>
+</head>
+<body>
+<div class="top"><h1>🤖 FREQAI PRO</h1><p>SATPAM • BTC/USDT • AUTO TRADE</p></div>
+<div class="price-box"><small>HARGA BTC LIVE</small><div class="price" id="price">Loading...</div><div class="live">● LIVE • Update tiap 3 detik</div></div>
+<div class="sinyal TUNGGU" id="sinyal">TUNGGU</div>
+<div class="grid">
+<div class="card"><h3>🧪 SIMULASI</h3><div class="modal" id="simModal">Rp 5.000.000</div><div class="pnl" id="simPnl">PnL: Rp 0</div><canvas id="chartSim"></canvas></div>
+<div class="card"><h3>🚨 REAL</h3><div class="modal" id="realModal">Rp 10.000.000</div><div class="pnl" id="realPnl">PnL: Rp 0</div><canvas id="chartReal"></canvas></div>
+</div>
+<div class="log"><h3>📋 LOG TERAKHIR</h3><p id="log">Menunggu sinyal...</p></div>
+<div class="trades"><h3>📈 RIWAYAT TRADE - SIMULASI</h3><div id="tradesSim">Belum ada trade</div><h3 style="margin-top:16px">📈 RIWAYAT TRADE - REAL</h3><div id="tradesReal">Belum ada trade</div></div>
+<button onclick="load()">🔄 REFRESH SEKARANG</button>
+<script>
+const API='https://satpam-freqai.onrender.com/api/status';
+function rp(n){return 'Rp '+Math.round(n).toLocaleString('id-ID')}
+function draw(canvas,data,color){
+  const ctx=canvas.getContext('2d'); const w=canvas.width=canvas.clientWidth*2; const h=canvas.height=140*2;
+  ctx.clearRect(0,0,w,h); if(!data||data.length<2) return;
+  const vals=data.map(d=>d.equity); const min=Math.min(...vals); const max=Math.max(...vals);
+  ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=3;
+  data.forEach((d,i)=>{const x=i/(data.length-1)*w; const y=h-((d.equity-min)/((max-min)||1))*h*0.8-h*0.1; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}); ctx.stroke();
+}
+function renderTrades(el,trades){
+  if(!trades||!trades.length){el.innerHTML='Belum ada trade';return}
+  el.innerHTML=trades.slice().reverse().map(t=>{
+    const cls=t.status==='WIN'?'win':t.status==='LOSS'?'loss':'open';
+    return `<div class="trade"><span class="${cls}">● ${t.status} ${t.side}</span><br>Entry: ${t.entry} | TP: ${t.tp.toFixed(0)} | SL: ${t.sl.toFixed(0)}<br>${t.pnl!==undefined?'PnL: '+rp(t.pnl):'Masih OPEN...'}</div>`
+  }).join('')
+}
+async function load(){
+  try{
+    const r=await fetch(API); const d=await r.json();
+    document.getElementById('price').textContent='$ '+Number(d.price).toLocaleString('en-US');
+    const sig=d.sim.lastSignal||'TUNGGU';
+    const sEl=document.getElementById('sinyal'); sEl.textContent=sig; sEl.className='sinyal '+sig;
+    document.getElementById('simModal').textContent=rp(d.sim.modal);
+    document.getElementById('realModal').textContent=rp(d.real.modal);
+    document.getElementById('simPnl').textContent='PnL: '+rp(d.sim.modal-d.sim.modalAwal);
+    document.getElementById('realPnl').textContent='PnL: '+rp(d.real.modal-d.real.modalAwal);
+    document.getElementById('log').textContent=d.lastLog||'Menunggu sinyal...';
+    renderTrades(document.getElementById('tradesSim'),d.sim.trades);
+    renderTrades(document.getElementById('tradesReal'),d.real.trades);
+    draw(document.getElementById('chartSim'),d.sim.equity,'#00ff88');
+    draw(document.getElementById('chartReal'),d.real.equity,'#ffaa00');
+  }catch(e){document.getElementById('log').textContent='Gagal load, Render lagi tidur, refresh lagi...'}
+}
+load(); setInterval(load,3000);
+</script>
+</body>
+  </html>
