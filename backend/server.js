@@ -1,5 +1,5 @@
 // OTAK FREQAI PRO - TANPA FONNTE, TANPA WA
-// SIMULASI 5jt + REAL 10jt - Liat hasil di Vercel aja
+// SIMULASI 5jt + REAL 10jt - FIX BINANCE.VISION
 import http from 'http';
 const SYMBOL = 'BTCUSDT';
 
@@ -69,23 +69,23 @@ function cekSinyal(state, label) {
 }
 setInterval(async () => {
   try {
-    const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${SYMBOL}`);
+    const res = await fetch(`https://data-api.binance.vision/api/v3/ticker/price?symbol=${SYMBOL}`);
     const data = await res.json();
     livePrice = parseFloat(data.price);
     sim.lastPrice = livePrice; real.lastPrice = livePrice;
     sim.updatedAt = Date.now(); real.updatedAt = Date.now();
-  } catch (e) {}
+  } catch (e) { console.log('gagal harga', e.message); }
 }, 3000);
 setInterval(async () => {
   try {
-    const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${SYMBOL}&interval=1m&limit=50`);
+    const res = await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${SYMBOL}&interval=1m&limit=50`);
     const data = await res.json();
     klines = data.map(c => ({ close: parseFloat(c[4]), volume: parseFloat(c[5]) }));
     if (!livePrice && klines.length) livePrice = klines[klines.length - 1].close;
     cekSinyal(sim, 'SIMULASI');
     cekSinyal(real, 'REAL');
     console.log(`[${new Date().toLocaleTimeString('id-ID')}] Harga ${livePrice} | Sim ${Math.round(sim.modal)} | Real ${Math.round(real.modal)} | ${lastLog}`);
-  } catch (e) {}
+  } catch (e) { console.log('gagal klines', e.message); }
 }, 10000);
 
 const server = http.createServer((req, res) => {
